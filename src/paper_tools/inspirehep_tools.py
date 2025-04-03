@@ -320,12 +320,12 @@ class InspireHEPBibtexLmdbWrapper(lmdb_wrapper.LmdbWrapperBase):
 
 
 class EmbeddingLmdbWrapper(lmdb_wrapper.LmdbWrapperBase):
-    def __init__(self, dtype=np.dtype('float16'), **kwargs):
+    def __init__(self, path, dtype=np.float16, **kwargs):
         self.dtype = dtype
-        super().__init__(kwargs)
-    def pack_value(self, value: numpy.ndarray) -> bytes:
-        return np.tobytes(value)
-    def unpack_value(self, value: bytes) -> numpy.ndarray:
+        super().__init__(path, **kwargs)
+    def pack_value(self, value: np.ndarray) -> bytes:
+        return value.tobytes()
+    def unpack_value(self, value: bytes) -> np.ndarray:
         return np.frombuffer(value, dtype=self.dtype)
 
     
