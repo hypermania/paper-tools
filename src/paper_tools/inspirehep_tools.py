@@ -1,19 +1,20 @@
 import requests
-import bibtexparser
 import json
 import time
 import re
 import copy
-from thefuzz import fuzz
-import networkx as nx
 import lmdb
 import msgpack
 import pathlib
 import paper_tools.lmdb_wrapper as lmdb_wrapper
-import os
 import pipe
 from typing import List, Dict
-from dotenv import load_dotenv
+import numpy as np
+# import os
+# from dotenv import load_dotenv
+# import bibtexparser
+# from thefuzz import fuzz
+# import networkx as nx
 
 # A wrapper around requests.
 # Used to limit the rate of InspireHEP API calls.
@@ -316,6 +317,16 @@ class InspireHEPBibtexLmdbWrapper(lmdb_wrapper.LmdbWrapperBase):
         return value.encode()
     def unpack_value(self, value: bytes) -> str:
         return value.decode()
+
+
+class EmbeddingLmdbWrapper(lmdb_wrapper.LmdbWrapperBase):
+    def __init__(self, dtype=np.dtype('float16'), **kwargs):
+        self.dtype = dtype
+        super().__init__(kwargs)
+    def pack_value(self, value: numpy.ndarray) -> bytes:
+        return np.tobytes(value)
+    def unpack_value(self, value: bytes) -> numpy.ndarray:
+        return np.frombuffer(value, dtype=self.dtype)
 
     
 # Database manager for InspireHEP records and bibtex items

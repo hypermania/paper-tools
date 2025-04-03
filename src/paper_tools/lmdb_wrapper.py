@@ -110,6 +110,18 @@ class LmdbWrapperBase:
                     #msgpack.unpackb(value)
                     self.unpack_value(value)
                 )
+
+    def setitem_batched(self, items: dict):
+        """Set a collection of records from a {key: value} dict."""
+        with self.env.begin(write=True) as txn:
+            for key, value in items.items():
+                txn.put(
+                    self.encode_key(key),
+                    self.pack_value(value),
+                    overwrite=True
+                )
+
+
 """
     def batch_writer(self, buffer_size: int = 1000):
         return LmdbBatchWriter(self, buffer_size)
