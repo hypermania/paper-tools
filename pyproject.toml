@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paper-tools"
+version = "0.1.0"
+dependencies = [
+  "requests",
+  "python-dotenv",
+  "lmdb",
+  "bibtexparser",
+  "msgpack",
+  "typing",
+  "appdirs",
+  # "gidgethub[httpx]>4.0.0",
+  # "django>2.1; os_name != 'nt'",
+  # "django>2.0; os_name == 'nt'",
+]
+requires-python = ">=3.8"
+authors = [
+  {name = "Siyang Ling", email = "lingsy.chris2011@gmail.com"},
+]
+maintainers = [
+  {name = "Brett Cannon", email = "brett@example.com"}
+]
+description = "Automate certain aspects of paper writing."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["egg", "bacon", "sausage", "tomatoes", "Lobster Thermidor"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[project.urls]
+#Homepage = "https://example.com"
+#Documentation = "https://readthedocs.org"
+Repository = "https://github.com/hypermania/paper-tools"
+#"Bug Tracker" = "https://github.com/me/spam/issues"
+#Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+# [project.scripts]
+# spam-cli = "spam:main_cli"
+
+# [project.gui-scripts]
+# spam-gui = "spam:main_gui"
+
+# [project.entry-points."spam.magical"]
+# tomatoes = "spam:main_tomatoes"
