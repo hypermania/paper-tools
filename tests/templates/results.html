@@ -1,0 +1,33 @@
+<!-- templates/results.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results</title>
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .result { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; }
+        .score { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Search Results for: "{{ query }}"</h1>
+    <a href="/">New search</a>
+    
+    <div class="results">
+        {% for result in results %}
+        <div class="result">
+            <h3>{{ result.title }}</h3>
+            <div class="metadata">
+                <p>Authors: {{ result.authors|join(', ') }}</p>
+                <p>Publication Date: {{ result.date }}</p>
+            </div>
+            <p class="abstract">{{ result.abstract }}</p>
+            <div class="score">Similarity Score: {{ "%.3f"|format(result.score) }}</div>
+            {% if result.url %}
+            <a href="{{ result.url }}" target="_blank">View on InspireHEP</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
