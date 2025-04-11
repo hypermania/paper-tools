@@ -1,6 +1,7 @@
-# search_app.py
+# app.py
 from flask import Flask, request, render_template
 import json
+import pipe
 import numpy as np
 import faiss
 from FlagEmbedding import FlagAutoModel
