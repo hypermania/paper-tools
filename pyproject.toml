@@ -13,6 +13,7 @@ dependencies = [
   "msgpack",
   "typing",
   "appdirs",
+  "pylatexenc==3.0a32"
   # "gidgethub[httpx]>4.0.0",
   # "django>2.1; os_name != 'nt'",
   # "django>2.0; os_name == 'nt'",
