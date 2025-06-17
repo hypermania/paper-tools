@@ -7,13 +7,13 @@ import faiss
 from FlagEmbedding import FlagAutoModel
 from paper_tools.inspirehep_tools import *
 from paper_tools.config import get_data_dir
-
+from pathlib import Path
 
 db_path = get_data_dir()
 db = InspireHEPDatabase(db_path)
 
 # need to change
-with open(db_path + 'all_abstracts.json', 'r') as f:
+with open(db_path / Path('all_abstracts.json'), 'r') as f:
     all_abstracts = json.load(f)
 abstract_ids = list(all_abstracts)
 abstract_id_to_idx = {i:abstract_ids[i] for i in range(len(abstract_ids))}
