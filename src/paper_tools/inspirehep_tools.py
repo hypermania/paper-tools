@@ -8,13 +8,11 @@ import msgpack
 import pathlib
 import paper_tools.lmdb_wrapper as lmdb_wrapper
 import pipe
-from typing import List, Dict
+from typing import List, Set, Dict, Tuple
 import numpy as np
-# import os
-# from dotenv import load_dotenv
-# import bibtexparser
-# from thefuzz import fuzz
-# import networkx as nx
+
+import faiss
+from FlagEmbedding import FlagAutoModel
 
 # A wrapper around requests.
 # Used to limit the rate of InspireHEP API calls.
@@ -43,14 +41,14 @@ class InspireHEPClient:
         self.rl_requests = RateLimitedRequests()
 
     
-    """Get full record of particular literature using INSPIRE-HEP API"""
+    """Get a single INSPIRE-HEP ID, obtain the full record of literature"""
     def get_literature(self, inspire_id: str):
         response = self.rl_requests.get("https://inspirehep.net/api/literature/{}".format(inspire_id))
         return json.loads(response.content)
 
 
-    """Search INSPIRE-HEP API and return BibTeX entries"""
-    def get_literature_batched(self, id_list: List[str], max_results: int = 50) -> List[dict]:
+    """Get a list of INSPIRE-HEP IDs, obtain full record of all literatures in terms of dict: ID -> record"""
+    def get_literature_batched(self, id_list: List[str], max_results: int = 50) -> dict[str, dict]:
         id_chunks = [id_list[i:i+max_results] for i in range(0, len(id_list), max_results)]
         
         calls = []
@@ -72,8 +70,8 @@ class InspireHEPClient:
         return result
 
 
-    """Search the InspireHEP id for given BibTeX keys"""
-    def get_id_by_texkey(self, bibtex_list: List[str], max_results: int = 50) -> dict:
+    """Given a list of BibTex keys, obtain a mapping: texkey -> INSPIRE-HEP ID"""
+    def get_id_by_texkey(self, bibtex_list: List[str], max_results: int = 50) -> dict[str, str]:
         bibtex_chunks = [bibtex_list[i:i+max_results] for i in range(0, len(bibtex_list), max_results)]
         
         calls = []
@@ -101,7 +99,7 @@ class InspireHEPClient:
         return result
 
 
-    """Search the InspireHEP id for given author"""
+    """Given a single author BAI, obtain the list of INSPIRE-HEP IDs for literature works by that author"""
     def get_id_by_author(self, author: str, max_results: int = 50) -> dict:
         calls = []
         
@@ -139,7 +137,8 @@ class InspireHEPClient:
         return response.content.decode()
 
     
-    """Get BibTeX entry of a list of literature using INSPIRE-HEP API"""
+    # Needs to be changed to a dict
+    """Get a list of INSPIRE-HEP IDs, obtain the mapping: ID -> bibtex citation"""
     def get_bibtex_batched(self, id_list: List[str], max_results : int = 100) -> List[str]:
         id_chunks = [id_list[i:i+max_results] for i in range(0, len(id_list), max_results)]
         
@@ -328,26 +327,75 @@ class EmbeddingLmdbWrapper(lmdb_wrapper.LmdbWrapperBase):
     def unpack_value(self, value: bytes) -> np.ndarray:
         return np.frombuffer(value, dtype=self.dtype)
 
-    
+
 # Database manager for InspireHEP records and bibtex items
 class InspireHEPDatabase:
     RECORD_NAME = "record.lmdb"
     BIBTEX_NAME = "bibtex.lmdb"
-    
+    EMBEDDING_NAME = "embedding.lmdb"
+
+    model = None
+    def load_model(self):
+        if self.model == None:
+            self.model = FlagAutoModel.from_finetuned('BAAI/bge-large-en-v1.5')
+
+    id_list = None
+    abstract_embeddings_list = None
+    index_faiss = None
+    def index_embeddings(self):
+        if self.index_faiss == None:
+            self.id_list = list(self.embedding.keys())
+            self.abstract_embeddings_list = np.array(list(self.embedding.values()))
+            self.index_faiss = faiss.IndexFlatIP(1024) # Use 'BAAI/bge-large-en-v1.5'
+            self.index_faiss.add(self.abstract_embeddings_list)
+
+    readonly = True
     def __init__(self,
                  path:str,
-                 map_size:int=10737418240,  # Default 10GB
-                 readonly:bool=True):
+                 map_size:int=100737418240,  # Default 100GB
+                 readonly:bool=True,
+                 init_model:bool=False):
         record_path = str(pathlib.Path(path) / self.RECORD_NAME)
         bibtex_path = str(pathlib.Path(path) / self.BIBTEX_NAME)
+        embedding_path = str(pathlib.Path(path) / self.EMBEDDING_NAME)
         
         # 10 GB default map_size
         self.record = InspireHEPRecordLmdbWrapper(record_path, map_size=map_size, readonly=readonly)
         self.bibtex = InspireHEPBibtexLmdbWrapper(bibtex_path, map_size=map_size, readonly=readonly)
+        self.embedding = EmbeddingLmdbWrapper(embedding_path, map_size=map_size, readonly=readonly)
+        self.readonly = readonly
+        
+        if init_model:
+            self.load_model()
 
+    def update_embedding(self):
+        if self.embedding.env.flags()['readonly'] == True:
+            raise Exception("InspireHEPDatabase was initialized in readonly mode, cannot update embeddings.")
 
+        self.load_model()
+        self.id_list = list(self.record.keys()
+                            | pipe.filter(lambda i: self.record[i]['metadata'].get('abstracts')))
+        abstract_list = [self.record[i]['metadata']['abstracts'][0]['value'] for i in self.id_list]
+        self.abstract_embeddings_list = self.model.encode_queries(abstract_list)
+        for i in range(len(self.id_list)):
+            self.embedding[self.id_list[i]] = self.abstract_embeddings_list[i]
 
-# BFS search download literature works
+    def search_abstract(self, queries : List[str], k : int):
+        self.load_model()
+        self.index_embeddings()
+        
+        query_embeddings = np.array(self.model.encode_queries(queries))
+        D, I = self.index_faiss.search(query_embeddings, k)
+        map_to_id = np.vectorize(lambda i: self.id_list[i])
+        ids = map_to_id(I).tolist()
+
+        return D, ids
+            
+# Download INSPIRE-HEP records by a breadth-first-search staring from a list of literature IDs.
+# The mode option controls how the search branches out.
+# mode = "refs" only branch to works cited by the current node
+# mode = "cited" only branch to works that cite the current node
+# mode = "both" branch to both works
 def inspirehep_bfs_literature(collection: dict, roots: List[str], max_size: int, mode: str = "refs"):
     re_extract_id = re.compile('/([0-9]+)$')
     
