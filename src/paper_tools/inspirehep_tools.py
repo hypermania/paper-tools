@@ -41,14 +41,14 @@ class InspireHEPClient:
         self.rl_requests = RateLimitedRequests()
 
     
-    """Get a single INSPIRE-HEP ID, obtain the full record of literature"""
     def get_literature(self, inspire_id: str):
+        """Get a single INSPIRE-HEP ID, obtain the full record of literature"""
         response = self.rl_requests.get("https://inspirehep.net/api/literature/{}".format(inspire_id))
         return json.loads(response.content)
 
 
-    """Get a list of INSPIRE-HEP IDs, obtain full record of all literatures in terms of dict: ID -> record"""
     def get_literature_batched(self, id_list: List[str], max_results: int = 50) -> dict[str, dict]:
+        """Get a list of INSPIRE-HEP IDs, obtain full record of all literatures in terms of dict: ID -> record"""
         id_chunks = [id_list[i:i+max_results] for i in range(0, len(id_list), max_results)]
         
         calls = []
@@ -70,8 +70,8 @@ class InspireHEPClient:
         return result
 
 
-    """Given a list of BibTex keys, obtain a mapping: texkey -> INSPIRE-HEP ID"""
     def get_id_by_texkey(self, bibtex_list: List[str], max_results: int = 50) -> dict[str, str]:
+        """Given a list of BibTex keys, obtain a mapping: texkey -> INSPIRE-HEP ID"""
         bibtex_chunks = [bibtex_list[i:i+max_results] for i in range(0, len(bibtex_list), max_results)]
         
         calls = []
@@ -99,8 +99,8 @@ class InspireHEPClient:
         return result
 
 
-    """Given a single author BAI, obtain the list of INSPIRE-HEP IDs for literature works by that author"""
     def get_id_by_author(self, author: str, max_results: int = 50) -> dict:
+        """Given a single author BAI, obtain the list of INSPIRE-HEP IDs for literature works by that author"""
         calls = []
         
         def call_api(page_num):
@@ -129,17 +129,18 @@ class InspireHEPClient:
         return result
     
 
-    """Get BibTeX entry of particular literature using INSPIRE-HEP API"""
     def get_bibtex(self, inspire_id: str) -> str:
+        """Get BibTeX entry of particular literature using INSPIRE-HEP API"""
         # Use content negoatiation
         response = self.rl_requests.get("https://inspirehep.net/api/literature/{}".format(inspire_id),
                                         headers={"Accept": "application/x-bibtex"})
         return response.content.decode()
 
     
-    # Needs to be changed to a dict
-    """Get a list of INSPIRE-HEP IDs, obtain the mapping: ID -> bibtex citation"""
+
     def get_bibtex_batched(self, id_list: List[str], max_results : int = 100) -> List[str]:
+        """Get a list of INSPIRE-HEP IDs, obtain the mapping: ID -> bibtex citation"""
+        # Needs to be changed to a dict
         id_chunks = [id_list[i:i+max_results] for i in range(0, len(id_list), max_results)]
         
         calls = []
@@ -164,8 +165,9 @@ class InspireHEPClient:
         return result
 
     
-    """Get id of all cites to a particular literature using INSPIRE-HEP API"""
+
     def all_cites_to(self, inspire_id: str, max_results: int = 200) -> List[str]:
+        """Get id of all cites to a particular literature using INSPIRE-HEP API"""
         calls = []
         
         def call_api(page_num):
@@ -192,10 +194,16 @@ class InspireHEPClient:
         result = list(calls | pipe.select(lambda c: c['hits']['hits']) | pipe.chain | pipe.select(lambda r: r['id']))
         return result
 
-    """Get id of all cites to a list of literature using INSPIRE-HEP API"""
+
     def all_cites_to_batched(self, inspire_ids: List[str], max_results: int = 200) -> List[str]:
+        """Get id of all cites to a list of literature using INSPIRE-HEP API"""
+        # TODO: Pagination has a 10000 result limit. For example:
+        # params = {"q": "(refersto:recid:1210062) or (refersto:recid:1398602) or (refersto:recid:548392) or (refersto:recid:1709313) or (refersto:recid:1364709) or (refersto:recid:618659) or (refersto:recid:2652710) or (refersto:recid:394380) or (refersto:recid:1620084) or (refersto:recid:1599369) or (refersto:recid:2680186) or (refersto:recid:896136) or (refersto:recid:898625) or (refersto:recid:200574) or (refersto:recid:359612) or (refersto:recid:1346477) or (refersto:recid:1182075) or (refersto:recid:2106331) or (refersto:recid:1785475) or (refersto:recid:720153)", "size": 200, "sort": "mostrecent", "fields": "id", "page": 51}
+        # would lead to an error.
+        # Think about how to avoid this error. (reduce batch size?)
+
         calls = []
-        query = " or ".join(list(map(lambda r: "(refersto:recid:{})".format(r), inspire_ids)))        
+        query = " or ".join(list(map(lambda r: "(refersto:recid:{})".format(r), inspire_ids)))
         def call_api(page_num):
             params = {
                 "q": query,
