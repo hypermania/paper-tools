@@ -165,7 +165,7 @@ class LatexSnippet:
 def is_latex_well_formed(text:str):
     return LatexSnippet(text).is_well_formed()
 
-def extract_sections(paper: str):
+def extract_sections(text: str):
     return LatexSnippet(text).get_sections()
     
     

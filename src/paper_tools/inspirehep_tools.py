@@ -201,6 +201,8 @@ class InspireHEPClient:
         # params = {"q": "(refersto:recid:1210062) or (refersto:recid:1398602) or (refersto:recid:548392) or (refersto:recid:1709313) or (refersto:recid:1364709) or (refersto:recid:618659) or (refersto:recid:2652710) or (refersto:recid:394380) or (refersto:recid:1620084) or (refersto:recid:1599369) or (refersto:recid:2680186) or (refersto:recid:896136) or (refersto:recid:898625) or (refersto:recid:200574) or (refersto:recid:359612) or (refersto:recid:1346477) or (refersto:recid:1182075) or (refersto:recid:2106331) or (refersto:recid:1785475) or (refersto:recid:720153)", "size": 200, "sort": "mostrecent", "fields": "id", "page": 51}
         # would lead to an error.
         # Think about how to avoid this error. (reduce batch size?)
+        # This error is unavoidable if any one of the records are cited by more than 10000 others.
+        # For now do an easy fix of limiting page limit to 50.
 
         calls = []
         query = " or ".join(list(map(lambda r: "(refersto:recid:{})".format(r), inspire_ids)))
@@ -220,7 +222,7 @@ class InspireHEPClient:
         call_api(page_num)
         total = calls[-1]['hits']['total']
         found = len(calls[-1]['hits']['hits'])
-        while found < total:
+        while found < total and page_num < 50:
             page_num += 1
             call_api(page_num)
             found += len(calls[-1]['hits']['hits'])
