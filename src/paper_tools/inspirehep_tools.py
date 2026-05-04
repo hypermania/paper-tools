@@ -138,11 +138,11 @@ class InspireHEPClient:
 
     
 
-    def get_bibtex_batched(self, id_list: List[str], max_results : int = 100) -> Dict[str, str]:
-        """Get a list of INSPIRE-HEP IDs, obtain the mapping: ID -> bibtex citation"""
-        result = {}
+    def get_bibtex_batched(self, id_list: List[str], max_results : int = 100) -> List[str]:
+        """Get a list of bibtex citations corresponding to a list of INSPIRE-HEP IDs"""
+        result = []
         for inspire_id in id_list:
-            result[inspire_id] = self.get_bibtex(inspire_id)
+            result.append(self.get_bibtex(inspire_id))
         return result
 
     

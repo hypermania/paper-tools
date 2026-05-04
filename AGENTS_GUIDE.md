@@ -280,7 +280,7 @@ for pid, score in top:
 | # | File | Line(s) | Issue |
 |---|------|---------|-------|
 | 1 | `inspirehep_tools.py` | 200–231 | `all_cites_to_batched` limited to 50 pages (10000 results) due to InspireHEP pagination limit. Highly-cited papers may be truncated. |
-| 2 | `get_bibtex_batched` | 141-148 | Now returns ``Dict[str, str]`` (ID → bibtex citation) rather than ``List[str]``. Callers that join results as flat strings need adjustment. |
+| 2 | `get_bibtex_batched` | 141-146 | Returns ``List[str]`` (flat list of bibtex citations, no ID association). |
 
 ---
 
