@@ -159,6 +159,8 @@ class LatexSnippet:
         visitor.start(nodelist)
     
         section_pos = list(visitor.result | pipe.select(lambda node: node.pos))
+        end_doc = self.walker.s.rfind('\\end{document}')
+        section_pos.append(end_doc if end_doc != -1 else len(self.walker.s))
         needed_sections = [(section_pos[i], section_pos[i+1]) for i in range(len(section_pos)-1)]
         sections = [self.walker.s[p[0]:p[1]] for p in needed_sections]
     
@@ -166,10 +168,29 @@ class LatexSnippet:
 
     def get_maintext(self):
         """Extract the main text of a full tex file."""
-        cleaned = self.comments_removed()
-        cleaned_snippet = LatexSnippet(cleaned)
-        nontext = cleaned_snippet.nontext_removed()
-        return nontext
+        nodelist, _ = self.walker.parse_content(
+            latexnodes.parsers.LatexGeneralNodesParser()
+        )
+        if nodelist is None:
+            raise ValueError("Failed to parse LaTeX content: parser returned None")
+
+        comment_visitor = CommentVisitor()
+        comment_visitor.start(nodelist)
+        nontext_visitor = NontextVisitor()
+        nontext_visitor.start(nodelist)
+
+        all_remove = [(n.pos, n.pos_end) for n in list(comment_visitor.result) + list(nontext_visitor.result)]
+        all_remove.sort()
+
+        merged = []
+        for s, e in all_remove:
+            if merged and s <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+            else:
+                merged.append((s, e))
+
+        keep = complement_pairs(merged, len(self.walker.s))
+        return self.get_subtext(keep)
 
 def is_latex_well_formed(text:str):
     return LatexSnippet(text).is_well_formed()
@@ -178,4 +199,4 @@ def extract_sections(text: str):
     return LatexSnippet(text).get_sections()
     
     
-__all__ = ["LatexSnippet", "NontextVisitor", "CommentVisitor", "SectionVisitor", "filter_empty", "split_to_paragraphs", "is_latex_well_formed", "extract_sections", "extract_head_lines"]
+__all__ = ["LatexSnippet", "NontextVisitor", "CommentVisitor", "SectionVisitor", "filter_empty", "split_to_paragraphs", "is_latex_well_formed", "extract_sections", "extract_head_lines", "extract_latex"]

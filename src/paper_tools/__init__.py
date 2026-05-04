@@ -1,1 +1,1 @@
-__all__ = ["inspirehep_tools", "latex_tools", "lmdb_wrapper", "config", "analytic"]
+__all__ = ["inspirehep_tools", "latex_tools", "lmdb_wrapper", "config", "analytic", "pipe_usage"]

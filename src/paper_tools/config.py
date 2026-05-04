@@ -2,9 +2,6 @@ from pathlib import Path
 import os
 import appdirs
 
-# from dotenv import load_dotenv
-# load_dotenv()  # Load .env file if present
-
 def get_data_dir() -> Path:
     """Return OS-appropriate data directory"""
     custom_path = os.getenv("PAPER_TOOLS_DATA_PATH")

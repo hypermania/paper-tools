@@ -7,9 +7,7 @@ name = "paper-tools"
 version = "0.1.0"
 dependencies = [
   "requests",
-  "python-dotenv",
   "lmdb",
-  "bibtexparser",
   "msgpack",
   "appdirs",
   "pylatexenc==3.0a32",
@@ -23,18 +21,18 @@ requires-python = ">=3.8"
 authors = [
   {name = "Siyang Ling", email = "lingsy.chris2011@gmail.com"},
 ]
-maintainers = [
-  {name = "Brett Cannon", email = "brett@example.com"}
-]
 description = "Automate certain aspects of paper writing."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-keywords = ["egg", "bacon", "sausage", "tomatoes", "Lobster Thermidor"]
+keywords = ["inspire-hep", "latex", "literature", "academic-writing"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python"
 ]
+
+[project.optional-dependencies]
+tests = ["flask"]
 
 [project.urls]
 #Homepage = "https://example.com"

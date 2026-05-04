@@ -99,7 +99,7 @@ class InspireHEPClient:
         return result
 
 
-    def get_id_by_author(self, author: str, max_results: int = 50) -> dict:
+    def get_id_by_author(self, author: str, max_results: int = 50) -> List[str]:
         """Given a single author BAI, obtain the list of INSPIRE-HEP IDs for literature works by that author"""
         calls = []
         
@@ -138,30 +138,11 @@ class InspireHEPClient:
 
     
 
-    def get_bibtex_batched(self, id_list: List[str], max_results : int = 100) -> List[str]:
+    def get_bibtex_batched(self, id_list: List[str], max_results : int = 100) -> Dict[str, str]:
         """Get a list of INSPIRE-HEP IDs, obtain the mapping: ID -> bibtex citation"""
-        # Needs to be changed to a dict
-        id_chunks = [id_list[i:i+max_results] for i in range(0, len(id_list), max_results)]
-        
-        calls = []
-        for chunk in id_chunks:
-            query = " or ".join(list(map(lambda r: "(control_number:{})".format(r), chunk)))
-            params = {
-                "q": query,
-                "size": max_results,
-                "sort": "mostcited",
-                "format": "bibtex"
-            }
-            response = self.rl_requests.get(
-                "https://inspirehep.net/api/literature",
-                params=params
-            )
-            calls.append(response.content.decode())
-        
-        result = []
-        for call in calls:
-            result.extend(call.split('\n\n'))
-        
+        result = {}
+        for inspire_id in id_list:
+            result[inspire_id] = self.get_bibtex(inspire_id)
         return result
 
     
