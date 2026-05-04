@@ -16,7 +16,7 @@ def filter_empty(texts:list[str]):
     return result
     
 def split_to_paragraphs(text:str):
-    return filter_empty(text.split('\n\n'))
+    return filter_empty([p.strip() for p in text.split('\n\n')])
 
 def extract_latex(text:str):
     strip_regex = r"\`\`\`latex(.+)\`\`\`"
@@ -40,9 +40,11 @@ def complement_pairs(pairs:list[tuple[int, int]], final:int) -> list[tuple[int, 
     complement = []
     cursor = 0
     for i in range(0, len(pairs)):
-        complement.append((cursor, pairs[i][0]))
+        if cursor != pairs[i][0]:
+            complement.append((cursor, pairs[i][0]))
         cursor = pairs[i][1]
-    complement.append((cursor, final))
+    if cursor != final:
+        complement.append((cursor, final))
     return complement
 
 
@@ -83,6 +85,8 @@ class LatexSnippet:
             nodelist, parsing_state_delta = self.walker.parse_content(
                 latexnodes.parsers.LatexGeneralNodesParser()
             )
+            if nodelist is None:
+                return False
             is_well_formed = True
         except:
             is_well_formed = False
@@ -98,6 +102,9 @@ class LatexSnippet:
         nodelist, parsing_state_delta = self.walker.parse_content(
             latexnodes.parsers.LatexGeneralNodesParser()
         )
+
+        if nodelist is None:
+            return [] if not reverse else [(0, len(self.text))]
 
         npos = nodelist.pos
         nlen = nodelist.len
@@ -143,6 +150,8 @@ class LatexSnippet:
         nodelist, parsing_state_delta = self.walker.parse_content(
             latexnodes.parsers.LatexGeneralNodesParser()
         )
+        if nodelist is None:
+            return []
         npos = nodelist.pos
         nlen = nodelist.len
         
