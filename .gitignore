@@ -170,5 +170,9 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
-# PyPI configuration file
+# pypi configuration file
 .pypirc
+
+# lmdb database files
+*.lmdb/
+*.lmdb-lock

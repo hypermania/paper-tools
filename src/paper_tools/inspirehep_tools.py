@@ -245,72 +245,7 @@ class InspireHEPClient:
     
 
 
-# Fuzzy match over InspireHEP records.
-def fuzzy_match_inspirehep_record(record: dict, keyword: str):
-    title = record['metadata']['titles'][0]['title']
-    abstracts = record['metadata'].get('abstracts')
-    keywords = record['metadata'].get('keywords')
-    authors = record['metadata'].get('authors')
 
-    max_score = fuzz.partial_ratio(keyword, title)
-    if abstracts != None:
-        max_score = max(max_score, fuzz.partial_ratio(keyword, abstracts[0]['value']))
-    if keywords != None and len(keywords) > 0:
-        max_score = max(max_score, max(map(lambda word: fuzz.partial_ratio(keyword, word['value']), keywords)))
-    if authors != None and len(authors) > 0:
-        max_score = max(max_score, max(authors | pipe.select(lambda a: fuzz.partial_ratio(a['full_name'], keyword))))
-
-    return max_score
-
-
-# Not very useful. Just for fun.
-class InspireHEPAnalytics:
-    # Initialize an empty collection
-    def __init__(self, collection):
-        self.collection = collection
-        
-    def make_citation_graph(self):
-        collection = self.collection
-        re_extract_id = re.compile('/([0-9]+)$')
-        graph = dict()
-        for record_id, record in collection.items():
-            graph[record_id] = []
-            references = record['metadata'].get('references')
-            if references == None:
-                continue
-            for ref in references:
-                if ref.get('record') == None:
-                    continue
-                ref_id = re_extract_id.findall(ref['record']['$ref'])[0]
-                graph[record_id].append(ref_id)
-        return graph
-
-    def compute_pagerank(self, alpha=0.85, max_iter=100):
-        G = nx.DiGraph()
-
-        graph = self.make_citation_graph()
-        for lit_id, lit_cites in graph.items():
-            # Add edges: paper -> cited_paper
-            for cite_id in lit_cites:
-                if cite_id in graph:  # Only track papers in our initial set
-                    G.add_edge(lit_id, cite_id)
-                    G.add_edge(cite_id, lit_id)                
-
-        pr = nx.pagerank(G, alpha=alpha, max_iter=max_iter)
-        #return sorted(pr.items(), key=lambda x: -x[1])
-        return {x[0]: x[1] for x in pr.items()}
-
-    def fuzzy_search_inspirehep_collection(self, search_term, threshold=90):
-        collection = self.collection
-        results = []
-        search_term = search_term.lower().strip()
-    
-        for key, value in collection.items():
-            score = fuzzy_match_inspirehep_record(value, search_term)
-            if score >= threshold:
-                results.append((key, score))
-    
-        return sorted(results, key=lambda x: x[1], reverse=True)
 
 
 
@@ -401,36 +336,6 @@ class InspireHEPDatabase:
 
         return D, ids
             
-# Download INSPIRE-HEP records by a breadth-first-search staring from a list of literature IDs.
-# The mode option controls how the search branches out.
-# mode = "refs" only branch to works cited by the current node
-# mode = "cited" only branch to works that cite the current node
-# mode = "both" branch to both works
-def inspirehep_bfs_literature(collection: dict, roots: List[str], max_size: int, mode: str = "refs"):
-    re_extract_id = re.compile('/([0-9]+)$')
-    
-    queue = copy.deepcopy(roots)
-    while len(collection) < max_size and len(queue) > 0:
-        inspire_id = queue.pop(0)
-        if inspire_id in collection:
-            literature_json = collection[inspire_id]
-            #print("Already have reference, skipping\n")
-        else:
-            literature_json = client.get_literature(inspire_id)
-            collection[inspire_id] = literature_json
-            print("Got new reference: {}\nID: {}\n".format(literature_json['metadata']['titles'], literature_json['id']))
-
-        references = literature_json['metadata'].get('references')
-        if references == None:
-            continue
-        for ref in references:
-            if ref.get('record') == None:
-                continue
-            ref_id = re_extract_id.findall(ref['record']['$ref'])[0]
-            if ref_id not in queue:
-                queue.append(ref_id)
-
-
 def reference_ids(record: dict):
     references = record['metadata'].get('references')
     # print(references[0]['record']['$ref'])
@@ -469,4 +374,4 @@ def inspirehep_bfs_literature_batch(collection: dict, roots: List[str], max_size
 
 
 
-__all__ = ["InspireHEPClient", "InspireHEPDatabase"]
+__all__ = ["InspireHEPClient", "InspireHEPDatabase", "InspireHEPRecordLmdbWrapper", "InspireHEPBibtexLmdbWrapper", "EmbeddingLmdbWrapper", "RateLimitedRequests", "reference_ids", "inspirehep_bfs_literature_batch"]
