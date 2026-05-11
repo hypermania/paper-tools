@@ -167,7 +167,7 @@ Results text here.
 """
         s = latex_tools.LatexSnippet(tex)
         sections = s.get_sections()
-        self.assertGreaterEqual(len(sections), 2)
+        self.assertEqual(len(sections), 3)
         for section in sections:
             self.assertIn(r"\section", section)
 
@@ -297,7 +297,7 @@ Content two.
 \end{document}
 """
         sections = latex_tools.extract_sections(tex)
-        self.assertGreaterEqual(len(sections), 1)
+        self.assertEqual(len(sections), 2)
 
     def test_complement_pairs(self):
         result = latex_tools.complement_pairs([(0, 2), (4, 6)], 10)
@@ -662,47 +662,12 @@ class TestInspireHEPLmdbWrappers(unittest.TestCase):
 # ============================================================================
 
 class TestKnownIssues(unittest.TestCase):
-    """Tests that confirm known issues exist (for future fix verification)."""
+    """Affirmative tests for previously known issues that are now fixed."""
 
-    def test_pipe_usage_has_no_module_level_import_issues(self):
-        """Test that pipe_usage imports don't crash (may fail currently)."""
-        try:
-            # Temporarily redirect stdout to suppress print spam
-            import io
-            old_stdout = sys.stdout
-            sys.stdout = io.StringIO()
-            try:
-                import paper_tools.pipe_usage
-                imported_ok = True
-            except NameError:
-                imported_ok = False
-            finally:
-                sys.stdout = old_stdout
-            # This test documents the known bug: pipe_usage module-level
-            # code references undefined 'wrapper'. If it fails, the bug
-            # is still present and should be fixed.
-            if not imported_ok:
-                self.skipTest("KNOWN BUG: pipe_usage.py has module-level undefined variables")
-            else:
-                self.assertTrue(imported_ok)
-        except ModuleNotFoundError:
-            self.skipTest("pipe_usage depends on inspirehep_tools which may fail")
-
-    def test_fuzz_is_undefined_in_inspirehep(self):
-        """Test that fuzzy_match_inspirehep_record fails due to missing import."""
-        import paper_tools.inspirehep_tools as it
-        if not hasattr(it, 'fuzzy_match_inspirehep_record'):
-            self.skipTest("fuzzy_match_inspirehep_record not available")
-        try:
-            it.fuzzy_match_inspirehep_record(
-                {"metadata": {"titles": [{"title": "Test"}]}}, "test"
-            )
-            self.skipTest("bug may have been fixed or test data doesn't trigger it")
-        except NameError as e:
-            self.assertIn("fuzz", str(e).lower() or "fuzz")
-        except Exception:
-            # Other errors are acceptable for this test
-            pass
+    def test_pipe_usage_imports_cleanly(self):
+        """pipe_usage module-level code used to have undefined variables (fixed)."""
+        import paper_tools.pipe_usage
+        self.assertTrue(True)
 
 
 # ============================================================================

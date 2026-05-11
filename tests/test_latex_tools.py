@@ -1,9 +1,10 @@
+import os
 from paper_tools import latex_tools
 import pipe
 
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
-paper_path = "sample.tex"
+paper_path = os.path.join(_TESTS_DIR, "sample.tex")
 with open(paper_path, 'r') as f:
     paper = f.read()
     
@@ -13,7 +14,7 @@ paragraphs = snippet.get_paragraphs()
 print(snippet.is_well_formed())
 main_text = snippet.get_maintext()
 
-with open('main_text.tex', 'w') as f:
+with open(os.path.join(_TESTS_DIR, 'main_text.tex'), 'w') as f:
     f.write(main_text)
 
 # intervals = snippet.get_intervals(latex_tools.NontextVisitor, reverse=True)
